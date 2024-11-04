@@ -180,59 +180,101 @@ void determinant_matrix() {
 	free(matrix_one);
 }
 
-// Not Done
-void Gauss_Jordan_Elimination() {
+void Gauss_Jordan_Elimination(int** matrix, int rows, int cols) {
+	for (int i = 0; i < rows; i++) {
+		// Make the diagonal element 1
+		if (matrix[i][i] != 0) {
+			int divisor = matrix[i][i];
+			for (int j = 0; j < cols; j++) {
+				matrix[i][j] /= divisor;
+			}
+		}
 
+		// Make the other elements in this column 0
+		for (int k = 0; k < rows; k++) {
+			if (k != i) {
+				int factor = matrix[k][i];
+				for (int j = 0; j < cols; j++) {
+					matrix[k][j] -= factor * matrix[i][j];
+				}
+			}
+		}
+	}
+	printf("RREF Matrix:\n");
+	print_matrix(matrix, rows, cols);
 }
 
-// Not Done
 void RREF_Matrix() {
+	int rows = 0, cols = 0;
+	printf("Input matrix dimensions (rows columns):\n");
+	scanf_s("%d %d", &rows, &cols);
 
+	int** matrix = malloc(rows * sizeof(int*));
+	for (int i = 0; i < rows; i++) {
+		matrix[i] = malloc(cols * sizeof(int));
+		for (int j = 0; j < cols; j++) {
+			scanf_s("%d", &matrix[i][j]);
+		}
+	}
+
+	printf("Input Matrix:\n");
+	print_matrix(matrix, rows, cols);
+
+	Gauss_Jordan_Elimination(matrix, rows, cols);
+
+	for (int i = 0; i < rows; i++) {
+		free(matrix[i]);
+	}
+	free(matrix);
 }
 
-// Not Done
+
 void invert_matrix() {
-	printf("input matrix dimension\n");
-	int row = 0;
-	int column = 0;
+	int n;
+	printf("Input matrix dimension (n x n):\n");
+	scanf_s("%d", &n);
 
-	scanf_s("%d", &row);
-	column = row;
+	int** matrix = malloc(n * sizeof(int*));
+	int** identity = malloc(n * sizeof(int*));
 
-	int** matrix_one = malloc(row * sizeof(int*));
-
-	for (int i = 0; i < row; i++) {
-		matrix_one[i] = malloc(column * sizeof(int));
-		for (int j = 0; j < column; j++) {
-			int temp = 0;
-			scanf_s("%d", &temp);
-			matrix_one[i][j] = temp;
+	for (int i = 0; i < n; i++) {
+		matrix[i] = malloc(n * sizeof(int));
+		identity[i] = calloc(n, sizeof(int));
+		identity[i][i] = 1;
+		for (int j = 0; j < n; j++) {
+			scanf_s("%d", &matrix[i][j]);
 		}
 	}
 
-	printf("matrix\n");
-	print_matrix(matrix_one, row, column);
-
-	if (getdeterminant(matrix_one, row) == 0) {
-		printf("No Inverse");
-		for (int i = 0; i < row; i++) {
-			free(matrix_one[i]);
+	// Augment the matrix with the identity matrix
+	for (int i = 0; i < n; i++) {
+		int divisor = matrix[i][i];
+		for (int j = 0; j < n; j++) {
+			matrix[i][j] /= divisor;
+			identity[i][j] /= divisor;
 		}
-		free(matrix_one);
-		exit(1);
+		for (int k = 0; k < n; k++) {
+			if (k != i) {
+				int factor = matrix[k][i];
+				for (int j = 0; j < n; j++) {
+					matrix[k][j] -= factor * matrix[i][j];
+					identity[k][j] -= factor * identity[i][j];
+				}
+			}
+		}
 	}
 
-	//invert code
+	printf("Inverted Matrix:\n");
+	print_matrix(identity, n, n);
 
-	printf("Inverted matrix\n");
-	print_matrix(matrix_one, row, column);
-
-	for (int i = 0; i < row; i++) {
-		free(matrix_one[i]);
+	for (int i = 0; i < n; i++) {
+		free(matrix[i]);
+		free(identity[i]);
 	}
-
-	free(matrix_one);
+	free(matrix);
+	free(identity);
 }
+
 
 void matrix_transpose() {
 	printf("input Matrix Dimensions Row then Column\n");
@@ -284,9 +326,51 @@ void matrix_transpose() {
 
 }
 
-// Not Done
-void matrix_power() {
+int** matrix_multiply(int** a, int** b, int n) {
+	int** result = malloc(n * sizeof(int*));
+	for (int i = 0; i < n; i++) {
+		result[i] = calloc(n, sizeof(int));
+		for (int j = 0; j < n; j++) {
+			for (int k = 0; k < n; k++) {
+				result[i][j] += a[i][k] * b[k][j];
+			}
+		}
+	}
+	return result;
+}
 
+void matrix_power() {
+	int n, power;
+	printf("Input matrix dimension and power (n, p):\n");
+	scanf_s("%d %d", &n, &power);
+
+	int** matrix = malloc(n * sizeof(int*));
+	for (int i = 0; i < n; i++) {
+		matrix[i] = malloc(n * sizeof(int));
+		for (int j = 0; j < n; j++) {
+			scanf_s("%d", &matrix[i][j]);
+		}
+	}
+
+	int** result = matrix;
+	for (int i = 1; i < power; i++) {
+		int** temp = matrix_multiply(result, matrix, n);
+		if (i > 1) {
+			for (int j = 0; j < n; j++) free(result[j]);
+			free(result);
+		}
+		result = temp;
+	}
+
+	printf("Matrix to the power of %d:\n", power);
+	print_matrix(result, n, n);
+
+	for (int i = 0; i < n; i++) {
+		free(result[i]);
+		free(matrix[i]);
+	}
+	free(result);
+	free(matrix);
 }
 
 void matrix_addition() {
@@ -491,7 +575,13 @@ void trace_matrix() {
 
 void main() {
 	printf("Matrix Calculator\n");
-	printf("type MM for matrix multiplcation, or Det for determinant calculation,\n or Inv for matrix inverse or Trace for the trace of a matrix,\n or MA for matrix addition or Trans for matrix transpose or MS for matrix subtraction or Exit to quit\n");
+	printf("Type MM for matrix multiplication, Det for determinant calculation,\n");
+	printf("Inv for matrix inverse, Trace for the trace of a matrix,\n");
+	printf("MA for matrix addition, MS for matrix subtraction,\n");
+	printf("Trans for matrix transpose, GJ for Gauss-Jordan elimination,\n");
+	printf("RREF for reduced row echelon form, Pow for matrix power,\n");
+	printf("or Exit to quit\n");
+
 	char command[42] = "";
 	while (scanf_s("%s", command, 11) == 1 && strcmp(command, "Exit")) {
 		if (strcmp(command, "MM") == 0) {
@@ -522,6 +612,38 @@ void main() {
 			matrix_transpose();
 			printf("\n");
 		}
+		else if (strcmp(command, "GJ") == 0) {
+			// You can prompt the user for dimensions and create the matrix in the function
+			int rows, cols;
+			printf("Enter the number of rows and columns for Gauss-Jordan elimination:\n");
+			scanf_s("%d %d", &rows, &cols);
+
+			int** matrix = malloc(rows * sizeof(int*));
+			for (int i = 0; i < rows; i++) {
+				matrix[i] = malloc(cols * sizeof(int));
+				for (int j = 0; j < cols; j++) {
+					scanf_s("%d", &matrix[i][j]);
+				}
+			}
+
+			Gauss_Jordan_Elimination(matrix, rows, cols);
+
+			for (int i = 0; i < rows; i++) {
+				free(matrix[i]);
+			}
+			free(matrix);
+			printf("\n");
+		}
+		else if (strcmp(command, "RREF") == 0) {
+			RREF_Matrix();
+			printf("\n");
+		}
+		else if (strcmp(command, "Pow") == 0) {
+			matrix_power();
+			printf("\n");
+		}
+		else {
+			printf("Unknown command. Please try again.\n");
+		}
 	}
-	return 0;
 }
